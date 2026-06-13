@@ -875,7 +875,7 @@
                 this.vy = gravityVector.y * 0.5 +
                         (Math.random() - 0.5) * drift;
                 this.friction = 0.92;
-                this.maxSpeed = 4.0 + Math.random() * 1;     
+                this.maxSpeed = 6 + Math.random() * 2;    
                 
                 // Rotational Physics + NEW Max Spin Safety Clamp
                 this.angle = Math.random() * Math.PI * 2;
@@ -913,7 +913,7 @@
             }
 
             update() {
-                const gravityStrength = 0.08;
+                const gravityStrength = 0.14;
 
                 this.vx += gravityVector.x * gravityStrength;
                 this.vy += gravityVector.y * gravityStrength;
@@ -929,11 +929,13 @@
                     this.vy = (this.vy / speed) * this.maxSpeed;
                 }
 
+                const collisionPadding = 80;
+
                 if (
-                    this.x > textBounds.left &&
-                    this.x < textBounds.right &&
-                    this.y > textBounds.top &&
-                    this.y < textBounds.bottom
+                    this.x > textBounds.left - collisionPadding &&
+                    this.x < textBounds.right + collisionPadding &&
+                    this.y > textBounds.top - collisionPadding &&
+                    this.y < textBounds.bottom + collisionPadding
                 ) {
 
                     const centerX =
@@ -950,16 +952,26 @@
                     const nx = dx / dist;
                     const ny = dy / dist;
 
-                    // Strong side deflection
-                    this.vx += nx * 0.35;
-                    this.vy += ny * 0.35;
+                    // Gravity direction
+                    const gx = gravityVector.x;
+                    const gy = gravityVector.y;
 
-                    // Preserve most velocity
-                    this.vx *= 0.98;
-                    this.vy *= 0.98;
+                    // Perpendicular to gravity
+                    const flowX = -gy;
+                    const flowY = gx;
 
-                    this.spin +=
-                        (Math.random() - 0.5) * 0.004;
+                    // Determine which side of the text we're on
+                    const side = Math.sign(nx * flowX + ny * flowY);
+
+                    // Strong stream deflection
+                    this.vx += flowX * side * 0.9;
+                    this.vy += flowY * side * 0.9;
+
+                    // Push outward slightly
+                    this.vx += nx * 0.2;
+                    this.vy += ny * 0.2;
+
+                    this.spin += (Math.random() - 0.5) * 0.002;
                 }
 
                 // MOUSE FORCE ENGINE
@@ -981,15 +993,8 @@
                 // 1. SAFETY ACTUATOR: CLAMP SPIN RATE (Prevents hyper-spinning)
                 this.spin = Math.max(-this.maxSpin, Math.min(this.maxSpin, this.spin));
 
-                // 2. SAFETY ACTUATOR: CLAMP LINEAR VELOCITY
-                const currentSpeed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-                if (currentSpeed > this.maxSpeed) {
-                    this.vx = (this.vx / currentSpeed) * this.maxSpeed;
-                    this.vy = (this.vy / currentSpeed) * this.maxSpeed;
-                }
-
                 const sway =
-                    Math.sin(performance.now() * 0.001 + this.swayOffset) * 0.4;
+                    Math.sin(performance.now() * 0.0015 + this.swayOffset) * 1.0;
 
                 // Perpendicular to gravity
                 const perpX = -gravityVector.y;
