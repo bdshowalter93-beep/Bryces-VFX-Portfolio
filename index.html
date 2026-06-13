@@ -756,6 +756,85 @@
             leafMouse.y = -1000;
         });
 
+        // ==========================================================
+        // DEVICE GRAVITY VECTOR
+        // ==========================================================
+
+        const gravityVector = {
+            x: 0,
+            y: 1
+        };
+
+        function setupGyroGravity() {
+
+            const startTracking = () => {
+
+                window.addEventListener('deviceorientation', (event) => {
+
+                    const beta = event.beta || 0;   // front/back
+                    const gamma = event.gamma || 0; // left/right
+
+                    let gx, gy;
+
+                    switch (window.orientation) {
+
+                        case 90:
+                            gx = -(beta / 90);
+                            gy = gamma / 90;
+                            break;
+
+                        case -90:
+                            gx = beta / 90;
+                            gy = -(gamma / 90);
+                            break;
+
+                        default:
+                            gx = gamma / 90;
+                            gy = beta / 90;
+                    }
+
+                    const magnitude = Math.hypot(gx, gy);
+
+                    if (magnitude > 0.01) {
+                        gx /= magnitude;
+                        gy /= magnitude;
+                    }
+
+                    // Smooth motion
+                    gravityVector.x += (gx - gravityVector.x) * 0.08;
+                    gravityVector.y += (gy - gravityVector.y) * 0.08;
+                });
+            };
+
+            // iOS permission support
+            if (
+                typeof DeviceOrientationEvent !== "undefined" &&
+                typeof DeviceOrientationEvent.requestPermission === "function"
+            ) {
+
+                document.addEventListener('click', async () => {
+
+                    try {
+                        const permission =
+                            await DeviceOrientationEvent.requestPermission();
+
+                        if (permission === 'granted') {
+                            startTracking();
+                        }
+
+                    } catch (err) {
+                        console.warn(err);
+                    }
+
+                }, { once: true });
+
+            } else {
+                startTracking();
+            }
+        }
+
+        setupGyroGravity();
+
         class RealisticMapleLeaf {
             constructor() {
                 this.reset();
@@ -763,8 +842,29 @@
             }
 
             reset() {
-                this.x = Math.random() * canvasWidth;
-                this.y = -40;
+                const absX = Math.abs(gravityVector.x);
+                const absY = Math.abs(gravityVector.y);
+
+                if (absY >= absX) {
+
+                    if (gravityVector.y >= 0) {
+                        this.x = Math.random() * canvasWidth;
+                        this.y = -40;
+                    } else {
+                        this.x = Math.random() * canvasWidth;
+                        this.y = canvasHeight + 40;
+                    }
+
+                } else {
+
+                    if (gravityVector.x >= 0) {
+                        this.x = -40;
+                        this.y = Math.random() * canvasHeight;
+                    } else {
+                        this.x = canvasWidth + 40;
+                        this.y = Math.random() * canvasHeight;
+                    }
+                }
                 this.size = Math.random() * 12 + 10; 
                 
                 this.vx = Math.random() * 0.8 - 0.4;
@@ -811,12 +911,19 @@
             }
 
             update() {
-                this.vy += this.gravity;
+                // Gravity follows phone angle
+                this.vx += gravityVector.x * this.gravity;
+                this.vy += gravityVector.y * this.gravity;
+
+                // Air resistance
                 this.vx *= this.friction;
                 this.vy *= this.friction;
 
-                if (this.vy > this.terminalVelocity && this.vy < this.maxSpeed) {
-                    this.vy = this.terminalVelocity;
+                const speed = Math.hypot(this.vx, this.vy);
+
+                if (speed > this.terminalVelocity) {
+                    this.vx = (this.vx / speed) * this.terminalVelocity;
+                    this.vy = (this.vy / speed) * this.terminalVelocity;
                 }
 
                 // TEXT COLLISION ENGINE
@@ -875,7 +982,12 @@
                 // Continuous 3D Flip Modulator
                 this.scaleY = Math.sin((this.y + this.flipOffset) * this.flipSpeed);
 
-                if (this.y > canvasHeight + 40 || this.x < -40 || this.x > canvasWidth + 40) {
+                if (
+                    this.y > canvasHeight + 100 ||
+                    this.y < -100 ||
+                    this.x < -100 ||
+                    this.x > canvasWidth + 100
+                ) {
                     this.reset();
                 }
             }
