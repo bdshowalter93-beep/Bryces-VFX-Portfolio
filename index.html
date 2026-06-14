@@ -414,13 +414,13 @@
     <section id="hero" class="hero-section">
         <div class="hero-content">
             <h1 class="animate-pop">BRYCE <span class="accent-text">VFX</span></h1>
-            <p>3D Artist / FX Simulation Specialist</p>
+            <p>3D and VFX Artist</p>
             <a href="#work" class="btn">Explore Creations</a>
         </div>
     </section>
 
     <section id="work" class="work-section">
-        <h2 class="section-title">Selected Projects</h2>
+        <h2 class="section-title">Projects</h2>
         <div class="portfolio-grid">
             
             <div class="grid-divider">Still Renders</div>
@@ -913,7 +913,7 @@
             }
 
             update() {
-                const gravityStrength = 0.14;
+                const gravityStrength = 0.9;
 
                 this.vx += gravityVector.x * gravityStrength;
                 this.vy += gravityVector.y * gravityStrength;
@@ -964,8 +964,8 @@
                     const side = Math.sign(nx * flowX + ny * flowY);
 
                     // Strong stream deflection
-                    this.vx += flowX * side * 0.9;
-                    this.vy += flowY * side * 0.9;
+                    this.vx += flowX * side * 0.4;
+                    this.vy += flowY * side * 0.4;
 
                     // Push outward slightly
                     this.vx += nx * 0.2;
@@ -1100,7 +1100,7 @@
             }
         }
 
-        const maxLeaves = 10; 
+        const maxLeaves = 15; 
         const leafArray = Array.from({ length: maxLeaves }, () => new RealisticMapleLeaf());
 
         function renderLeaves() {
